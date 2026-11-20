@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1b1410">
+<title>Munim ji</title>
+<style>
+:root{color-scheme:dark;--bg:#1b1410;--card:#2a201a;--me:#c8691e;--ai:#33271f;--tx:#f4e9dc;--mut:#a89683}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,sans-serif;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--card)}
+header h1{font-size:18px;margin:0;flex:1}
+header button,.tabs button{background:none;border:1px solid var(--mut);color:var(--tx);border-radius:8px;padding:6px 10px;font-size:14px}
+.tabs{display:flex;gap:6px;padding:8px 14px}
+.tabs button.on{background:var(--me);border-color:var(--me)}
+main{flex:1;overflow-y:auto;padding:10px 14px}
+.msg{max-width:85%;padding:9px 12px;margin:6px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
+.me{background:var(--me);margin-left:auto}
+.ai{background:var(--ai)}
+.bar{display:flex;gap:6px;padding:10px 14px;background:var(--card);padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.bar input,textarea,.set input{flex:1;background:var(--bg);color:var(--tx);border:1px solid var(--mut);border-radius:10px;padding:10px;font-size:16px}
+.bar button{border:0;border-radius:10px;padding:0 14px;font-size:20px;background:var(--me);color:#fff}
+.note{background:var(--card);border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:8px;align-items:flex-start}
+.note span{flex:1;white-space:pre-wrap}
+.note button{background:none;border:0;color:var(--mut);font-size:18px}
+.set{display:none;padding:10px 14px;background:var(--card);gap:6px;flex-direction:column}
+.set small{color:var(--mut)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>🙏 Munim ji</h1>
+  <button id="spk">🔊 On</button>
+  <button id="cfg">⚙️</button>
+</header>
+<div class="set" id="set">
+  <small>Gemini API key (aistudio.google.com se free). Sirf is device me save hoti hai.</small>
+  <input id="key" type="password" placeholder="API key paste karo">
+  <button id="saveKey" style="padding:8px;border-radius:8px;border:0;background:var(--me);color:#fff">Save</button>
+</div>
+<div class="tabs">
+  <button id="tChat" class="on">💬 Chat</button>
+  <button id="tNotes">📝 Notes</button>
+</div>
+<main id="chat"></main>
+<main id="notes" class="hide"></main>
+<div class="bar" id="bar">
+  <button id="mic">🎤</button>
+  <input id="inp" placeholder="Munim ji se bolo ya likho…" autocomplete="off">
+  <button id="send">➤</button>
+</div>
+<div class="bar hide" id="nbar">
+  <input id="ninp" placeholder="Nayi note likho…">
+  <button id="nadd">＋</button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const MODELS=["gemini-flash-latest","gemini-flash-lite-latest","gemini-2.5-flash","gemini-2.5-flash-lite"];
+const store={
+  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",[]), speak=store.get("speak",true);
+$("key").value=key; $("spk").textContent=speak?"🔊 On":"🔇 Off";
+
+function add(role,text){
+  const d=document.createElement("div");
+  d.className="msg "+(role==="user"?"me":"ai");
+  d.textContent=text; $("chat").appendChild(d);
+  $("chat").scrollTop=$("chat").scrollHeight; return d;
+}
+hist.forEach(m=>add(m.role,m.parts[0].text));
+if(!hist.length) add("model","Namaste! Main Munim ji hoon. Kuch bhi poochho, ya bolo \"ye yaad rakhna…\" aur main note kar loonga.");
+
+function renderNotes(){
+  $("notes").innerHTML="";
+  if(!notes.length){$("notes").innerHTML='<p style="color:var(--mut)">Abhi koi note nahi.</p>';}
+  notes.forEach((n,i)=>{
+    const d=document.createElement("div");d.className="note";
+    const s=document.createElement("span");s.textContent=n;
+    const b=document.createElement("button");b.textContent="🗑";
+    b.onclick=()=>{notes.splice(i,1);store.set("notes",notes);renderNotes()};
+    d.append(s,b);$("notes").appendChild(d);
+  });
+}
+renderNotes();
+
+function say(t){
+  if(!speak||!window.speechSynthesis)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";speechSynthesis.speak(u);
+}
+
+async function ask(text){
+  if(!key){add("model","Pehle ⚙️ me Gemini API key daalo.");$("set").style.display="flex";return;}
+  add("user",text);
+  hist.push({role:"user",parts:[{text}]});
+  const wait=add("model","…");
+  const sys="Tum 'Munim ji' ho, ek desi, bharosemand personal assistant. Hinglish (Roman Hindi) me chhote, saaf jawab do. "+
+   "Agar user kuch yaad rakhne ya note karne ko kahe, to jawab ke aakhir me alag line me likho: SAVE_NOTE: <note ka text>. "+
+   "User ki saved notes:\n"+(notes.join("\n")||"(koi nahi)");
+  try{
+    let r,j;
+    for(let i=0;i<MODELS.length;i++){
+      r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODELS[i]+":generateContent?key="+encodeURIComponent(key),{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:hist.slice(-20)})
+      });
+      j=await r.json();
+      if(r.ok||![429,500,503,404].includes(r.status))break;
+      wait.textContent="Thoda busy hai, dusra model try kar raha hoon…";
+      await new Promise(s=>setTimeout(s,1200));
+    }
+    if(!r.ok) throw new Error(j.error?.message||"Error "+r.status);
+    let out=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"(khaali jawab)";
+    const m=out.match(/SAVE_NOTE:\s*(.+)/);
+    if(m){notes.push(m[1].trim());store.set("notes",notes);renderNotes();out=out.replace(/SAVE_NOTE:.*/,"").trim()+"\n📝 Note save ho gaya.";}
+    wait.textContent=out;
+    hist.push({role:"model",parts:[{text:out}]});
+    store.set("hist",hist.slice(-40));
+    say(out.replace(/📝.*/,""));
+  }catch(e){
+    wait.textContent="Dikkat aayi: "+e.message;
+    hist.pop();
+  }
+}
+
+function go(){const t=$("inp").value.trim();if(!t)return;$("inp").value="";ask(t);}
+$("send").onclick=go;
+$("inp").addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$("mic").onclick=()=>{
+  if(!SR){add("model","Is browser me voice input nahi hai. Chrome use karo.");return;}
+  const r=new SR();r.lang="hi-IN";r.interimResults=false;
+  $("mic").textContent="🔴";
+  r.onresult=e=>ask(e.results[0][0].transcript);
+  r.onerror=()=>{};
+  r.onend=()=>{$("mic").textContent="🎤"};
+  try{r.start()}catch(e){}
+};
+
+$("cfg").onclick=()=>{$("set").style.display=$("set").style.display==="flex"?"none":"flex"};
+$("saveKey").onclick=()=>{key=$("key").value.trim();store.set("key",key);$("set").style.display="none";};
+$("spk").onclick=()=>{speak=!speak;store.set("speak",speak);$("spk").textContent=speak?"🔊 On":"🔇 Off";if(!speak&&window.speechSynthesis)speechSynthesis.cancel();};
+
+function tab(n){
+  $("chat").classList.toggle("hide",n);$("bar").classList.toggle("hide",n);
+  $("notes").classList.toggle("hide",!n);$("nbar").classList.toggle("hide",!n);
+  $("tChat").classList.toggle("on",!n);$("tNotes").classList.toggle("on",n);
+}
+$("tChat").onclick=()=>tab(false);$("tNotes").onclick=()=>tab(true);
+$("nadd").onclick=()=>{const t=$("ninp").value.trim();if(!t)return;notes.push(t);store.set("notes",notes);$("ninp").value="";renderNotes();};
+</script>
+</body>
+</html>
