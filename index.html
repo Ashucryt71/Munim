@@ -40,8 +40,10 @@ main{flex:1;overflow-y:auto;padding:10px 14px}
 <body>
 <div id="alerts"></div>
 <header>
-  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v4</small></h1>
+  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v7</small></h1>
+  <button id="brf">☀️</button>
   <button id="clr">🧹</button>
+  <button id="web">🌐 On</button>
   <button id="spk">🔊 On</button>
   <button id="cfg">⚙️</button>
 </header>
@@ -85,7 +87,8 @@ const store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 };
 let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",[]), speak=store.get("speak",true), rems=store.get("rems",[]);
-let busy=false;
+let busy=false, search=store.get("search",true);
+$("web").textContent=search?"🌐 On":"🌐 Off";
 $("key").value=key; $("spk").textContent=speak?"🔊 On":"🔇 Off";
 
 function add(role,text){
@@ -136,10 +139,62 @@ function renderRems(){
 renderRems();
 
 /* ---------- awaaz ---------- */
-function say(t){
-  if(!speak||!window.speechSynthesis)return;
+function pickVoice(){
+  try{
+    const vs=speechSynthesis.getVoices().filter(v=>/^hi/i.test(v.lang));
+    return vs.find(v=>/google/i.test(v.name))||vs.find(v=>!v.localService)||vs[0]||null;
+  }catch(e){return null}
+}
+if(window.speechSynthesis)speechSynthesis.onvoiceschanged=()=>{};
+function browserSay(t){
+  if(!window.speechSynthesis)return;
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";speechSynthesis.speak(u);
+  const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";
+  const v=pickVoice();if(v)u.voice=v;
+  u.rate=0.92;u.pitch=1;
+  speechSynthesis.speak(u);
+}
+const TTS_MODELS=["gemini-2.5-flash-preview-tts","gemini-2.5-flash-tts"];
+let curSrc=null,sayId=0;
+function stopAudio(){try{curSrc&&curSrc.stop()}catch(e){};curSrc=null;}
+async function geminiSpeak(t,id){
+  if(!key||!actx)return false;
+  for(const m of TTS_MODELS){
+    const ac=new AbortController();const to=setTimeout(()=>ac.abort(),20000);
+    try{
+      const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent?key="+encodeURIComponent(key),{
+        method:"POST",headers:{"Content-Type":"application/json"},signal:ac.signal,
+        body:JSON.stringify({
+          contents:[{parts:[{text:"Say in a warm, calm, friendly Indian tone: "+t}]}],
+          generationConfig:{responseModalities:["AUDIO"],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:"Charon"}}}}
+        })
+      });
+      clearTimeout(to);
+      if(!r.ok)continue;
+      const j=await r.json();
+      const p=j.candidates?.[0]?.content?.parts?.find(x=>x.inlineData);
+      if(!p)continue;
+      if(id!==sayId)return true;
+      const rate=+(/rate=(\d+)/.exec(p.inlineData.mimeType||"")||[0,24000])[1];
+      const bin=atob(p.inlineData.data),n=bin.length>>1;
+      const buf=actx.createBuffer(1,n,rate),ch=buf.getChannelData(0);
+      for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v&0x8000)v-=0x10000;ch[i]=v/32768;}
+      stopAudio();
+      const src=actx.createBufferSource();src.buffer=buf;src.connect(actx.destination);src.start();curSrc=src;
+      return true;
+    }catch(e){clearTimeout(to);}
+  }
+  return false;
+}
+async function say(t){
+  if(!speak)return;
+  const id=++sayId;
+  stopAudio();if(window.speechSynthesis)speechSynthesis.cancel();
+  t=t.replace(/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F]/gu,"").trim().slice(0,500);
+  if(!t)return;
+  let ok=false;
+  try{ok=await geminiSpeak(t,id);}catch(e){}
+  if(!ok&&id===sayId)browserSay(t);
 }
 
 /* ---------- reminders ---------- */
@@ -206,23 +261,28 @@ async function ask(text){
    "Time 24 ghante format me, user ke local time me likho. Aaj abhi ka local time: "+nowStr()+". "+
    "'kal', 'subah', 'shaam', 'parson' jaise shabd isi time se hisaab karke date nikalo. Subah=08:00, dopahar=13:00, shaam=18:00, raat=21:00 maan lo agar exact time na bataye. "+
    "Reminder lagane pe jawab me bhi bata do ki kab yaad dilaoge. "+
+   (search?"Taaza ya badalti cheezon (news, mausam, rate, score, aaj ki khabar) ke liye web search use karo, aur jawab chhota rakho. ":"")+
+   "User ke pending reminders:\n"+(rems.filter(r=>!r.done).sort((a,b)=>a.at-b.at).map(r=>fmt(r.at)+" - "+r.text).join("\n")||"(koi nahi)")+"\n"+
    "User ki saved notes:\n"+(notes.join("\n")||"(koi nahi)");
   try{
     let c=hist.slice(-20);
     while(c.length&&c[0].role!=="user")c.shift();
-    let r,j;
+    let r,j,useTools=search;
     for(let i=0;i<MODELS.length;i++){
-      const ac=new AbortController();const to=setTimeout(()=>ac.abort(),20000);
+      const ac=new AbortController();const to=setTimeout(()=>ac.abort(),30000);
       try{
+        const body={system_instruction:{parts:[{text:sys}]},contents:c};
+        if(useTools)body.tools=[{google_search:{}}];
         r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODELS[i]+":generateContent?key="+encodeURIComponent(key),{
           method:"POST",headers:{"Content-Type":"application/json"},signal:ac.signal,
-          body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:c})
+          body:JSON.stringify(body)
         });
         j=await r.json();
       }catch(e){
         r={ok:false,status:503};j={error:{message:"Server ne der kar di (timeout). Thodi der baad try karo."}};
       }
       clearTimeout(to);
+      if(!r.ok&&r.status===400&&useTools){useTools=false;i--;continue;}
       if(r.ok||![429,500,503,404].includes(r.status))break;
       wait.textContent="Thoda busy hai, dusra model try kar raha hoon ("+(i+1)+"/"+MODELS.length+")…";
       await new Promise(s=>setTimeout(s,1200));
@@ -230,6 +290,11 @@ async function ask(text){
     if(!r.ok) throw new Error(j.error?.message||"Error "+r.status);
     let out=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"(khaali jawab)";
     let extra="";
+    const gc=j.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if(gc&&gc.length){
+      const names=[...new Set(gc.map(g=>g.web?.title).filter(Boolean))].slice(0,3);
+      if(names.length)extra+="\n🌐 Source: "+names.join(", ");
+    }
 
     const m=out.match(/SAVE_NOTE:\s*(.+)/);
     if(m){notes.push(m[1].trim());store.set("notes",notes);renderNotes();extra+="\n📝 Note save ho gaya.";}
@@ -246,7 +311,7 @@ async function ask(text){
     wait.textContent=out;
     hist.push({role:"model",parts:[{text:out}]});
     store.set("hist",hist.slice(-40));
-    say(out.replace(/[📝⏰⚠️].*/g,""));
+    say(out.replace(/[📝⏰⚠️🌐].*/g,""));
   }catch(e){
     wait.textContent="Dikkat aayi: "+e.message;
     hist.pop();
@@ -274,7 +339,8 @@ $("clr").onclick=()=>{
 };
 $("cfg").onclick=()=>{$("set").style.display=$("set").style.display==="flex"?"none":"flex"};
 $("saveKey").onclick=()=>{key=$("key").value.trim();store.set("key",key);$("set").style.display="none";};
-$("spk").onclick=()=>{speak=!speak;store.set("speak",speak);$("spk").textContent=speak?"🔊 On":"🔇 Off";if(!speak&&window.speechSynthesis)speechSynthesis.cancel();};
+$("web").onclick=()=>{search=!search;store.set("search",search);$("web").textContent=search?"🌐 On":"🌐 Off";};
+$("spk").onclick=()=>{speak=!speak;store.set("speak",speak);$("spk").textContent=speak?"🔊 On":"🔇 Off";if(!speak){sayId++;stopAudio();if(window.speechSynthesis)speechSynthesis.cancel();}};
 
 function tab(n){
   const names=["chat","notes","rem"];
@@ -294,6 +360,19 @@ $("radd").onclick=()=>{
   if(isNaN(at)||at<=Date.now()){alert("Time aage ka chuno.");return;}
   addRem(at,t);$("rinp").value="";$("rdt").value="";
 };
+
+/* ---------- subah ka brief ---------- */
+function runBrief(){
+  if(busy)return;
+  ask("☀️ Subah ka brief do: Ram Ram se shuru karo, aaj ki tareekh aur din batao, mere pending reminders aur zaroori notes ka chhota summary do (5-6 line max).");
+}
+$("brf").onclick=()=>{tab("chat");runBrief();};
+(function autoBrief(){
+  const d=new Date(),day=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  if(!key||d.getHours()>=12||store.get("briefDay","")===day)return;
+  store.set("briefDay",day);
+  setTimeout(runBrief,1500);
+})();
 </script>
 </body>
 </html>
