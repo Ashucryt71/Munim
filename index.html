@@ -3,51 +3,78 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1b1410">
+<meta name="theme-color" content="#04070c">
 <title>Munim ji</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#1b1410;--card:#2a201a;--me:#c8691e;--ai:#33271f;--tx:#f4e9dc;--mut:#a89683}
+:root{color-scheme:dark;--bg:#04070c;--card:#0b1626;--card2:#0f1f36;--line:#1d3350;--me:#1f5fae;--ai:#0e1520;--tx:#dbe5f1;--mut:#7f90a6;--acc:#4da3ff;--glow:rgba(77,163,255,.35)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--tx);font-family:system-ui,sans-serif;display:flex;flex-direction:column}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px;background:var(--card)}
-header h1{font-size:17px;margin:0;flex:1 1 100%}
-header button,.tabs button{background:none;border:1px solid var(--mut);color:var(--tx);border-radius:8px;padding:5px 8px;font-size:14px}
-.tabs{display:flex;gap:6px;padding:8px 14px}
-.tabs button.on{background:var(--me);border-color:var(--me)}
-main{flex:1;overflow-y:auto;padding:10px 14px}
-.msg{max-width:85%;padding:9px 12px;margin:6px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
-.me{background:var(--me);margin-left:auto}
-.ai{background:var(--ai)}
-.bar{display:flex;gap:6px;padding:10px 14px;background:var(--card);padding-bottom:max(10px,env(safe-area-inset-bottom))}
-.bar input,textarea,.set input{flex:1;min-width:0;background:var(--bg);color:var(--tx);border:1px solid var(--mut);border-radius:10px;padding:10px;font-size:16px}
-.bar button{border:0;border-radius:10px;padding:0 14px;font-size:20px;background:var(--me);color:#fff}
-.note{background:var(--card);border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:8px;align-items:flex-start}
+body{color:var(--tx);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;
+  background:
+   radial-gradient(900px 420px at 50% -140px,#0d2347 0%,transparent 72%),
+   linear-gradient(rgba(77,163,255,.035) 1px,transparent 1px) 0 0/30px 30px,
+   linear-gradient(90deg,rgba(77,163,255,.035) 1px,transparent 1px) 0 0/30px 30px,
+   var(--bg)}
+button,input,textarea{font-family:inherit}
+header{padding:10px 14px 8px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(#0c1a2e,#07101c);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.reactor{width:36px;height:36px;border-radius:50%;border:2px solid var(--acc);box-shadow:0 0 12px var(--glow),inset 0 0 8px var(--glow);position:relative;flex:none}
+.reactor::before{content:"";position:absolute;inset:6px;border-radius:50%;border:1.5px dashed var(--acc);animation:spin 16s linear infinite}
+.reactor::after{content:"";position:absolute;inset:13px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.reactor::before{animation:none}}
+header h1{font-family:"Rajdhani","Segoe UI",system-ui,sans-serif;font-size:23px;font-weight:600;letter-spacing:.2em;margin:0;line-height:1.1}
+header h1 small{font-family:"Segoe UI",system-ui,sans-serif;font-size:11px;letter-spacing:.04em;font-weight:400;color:var(--mut);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.tools{display:flex;gap:6px;overflow-x:auto;margin-top:9px;scrollbar-width:none}
+.tools::-webkit-scrollbar{display:none}
+.tools button{flex:none;background:transparent;border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:5px 10px;font-size:13px}
+.tools button:active{background:var(--card2);border-color:var(--acc)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.tabs{display:flex;padding:0 10px;background:#07101c;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--mut);padding:11px 4px;font-size:14px}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc);text-shadow:0 0 10px var(--glow)}
+main{flex:1;overflow-y:auto;padding:12px 14px}
+.msg{max-width:86%;padding:10px 13px;margin:9px 0;line-height:1.45;white-space:pre-wrap}
+.me{margin-left:auto;background:linear-gradient(135deg,#123a6e,#0d2a52);border:1px solid #1f4f8f;border-radius:14px 4px 14px 14px}
+.ai{background:var(--ai);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:4px 14px 14px 14px}
+.bar{display:flex;gap:8px;padding:10px 12px;background:#07101c;border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.bar input,textarea,.set input{flex:1;min-width:0;background:#060d17;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:16px}
+.bar input:focus,.set input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow);outline:none}
+.bar button{border:1px solid #1f4f8f;border-radius:8px;padding:0 15px;font-size:20px;background:#123a6e;color:#fff}
+.bar button:active{background:#1a4d8f}
+.note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:6px;padding:10px 12px;margin:8px 0;display:flex;gap:8px;align-items:flex-start}
 .note span{flex:1;white-space:pre-wrap}
-.note small{display:block;color:var(--mut)}
+.note small{display:block;color:var(--mut);margin-top:2px}
 .note button{background:none;border:0;color:var(--mut);font-size:18px}
-.set{display:none;padding:10px 14px;background:var(--card);gap:6px;flex-direction:column}
+.set{display:none;padding:12px 14px;background:#08111d;border-bottom:1px solid var(--line);gap:8px;flex-direction:column;max-height:60vh;overflow-y:auto}
 .set small{color:var(--mut)}
 .hide{display:none!important}
 #rbar{flex-direction:column}
-#rbar .row{display:flex;gap:6px}
+#rbar .row{display:flex;gap:8px}
 #alerts{position:fixed;top:0;left:0;right:0;z-index:9;padding:8px;padding-top:max(8px,env(safe-area-inset-top))}
-.alert{background:var(--me);color:#fff;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;font-size:17px}
+.alert{background:#0d2a52;color:var(--tx);border:1px solid var(--acc);box-shadow:0 0 16px var(--glow);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;font-size:17px}
 .alert span{flex:1}
-.alert button{background:#fff;color:#000;border:0;border-radius:8px;padding:8px 12px;font-size:15px}
+.alert button{background:var(--acc);color:#04070c;border:0;border-radius:6px;padding:8px 12px;font-size:15px;font-weight:600}
 </style>
 </head>
 <body>
 <div id="alerts"></div>
 <header>
-  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v11</small></h1>
-  <button id="brf">☀️</button>
-  <button id="syn">🔄 Sync</button>
-  <button id="clr">🧹</button>
-  <button id="web">🌐 On</button>
-  <button id="spk">🔊 On</button>
-  <button id="nat">🎙️ Off</button>
-  <button id="cfg">⚙️</button>
+  <div class="brand">
+    <span class="reactor" aria-hidden="true"></span>
+    <h1>MUNIM JI<small>v12</small></h1>
+  </div>
+  <div class="tools">
+    <button id="brf">☀️ Brief</button>
+    <button id="syn">🔄 Sync</button>
+    <button id="clr">🧹</button>
+    <button id="web">🌐 On</button>
+    <button id="spk">🔊 On</button>
+    <button id="nat">🎙️ Off</button>
+    <button id="cfg">⚙️</button>
+  </div>
 </header>
 <div class="set" id="set">
   <small>Gemini API key (aistudio.google.com se free). Sirf is device me save hoti hai.</small>
