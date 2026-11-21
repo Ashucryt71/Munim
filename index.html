@@ -40,7 +40,7 @@ main{flex:1;overflow-y:auto;padding:10px 14px}
 <body>
 <div id="alerts"></div>
 <header>
-  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v9</small></h1>
+  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v11</small></h1>
   <button id="brf">☀️</button>
   <button id="syn">🔄 Sync</button>
   <button id="clr">🧹</button>
@@ -53,6 +53,9 @@ main{flex:1;overflow-y:auto;padding:10px 14px}
   <small>Gemini API key (aistudio.google.com se free). Sirf is device me save hoti hai.</small>
   <input id="key" type="password" placeholder="API key paste karo">
   <button id="saveKey" style="padding:8px;border-radius:8px;border:0;background:var(--me);color:#fff">Save</button>
+  <small style="margin-top:8px">Backup AI: Groq key (console.groq.com/keys se free). Gemini ki limit khatam ho to ye chalega.</small>
+  <input id="gqkey" type="password" placeholder="Groq key paste karo (gsk_...)">
+  <button id="saveGq" style="padding:8px;border-radius:8px;border:0;background:var(--me);color:#fff">Save Groq key</button>
   <small style="margin-top:8px">Sync (GitHub): private repo ka naam aur token. Sirf is device me save hota hai.</small>
   <input id="ghrepo" placeholder="Ashucryt71/munim-data">
   <input id="ghtok" type="password" placeholder="GitHub token paste karo">
@@ -98,7 +101,8 @@ let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",
 let busy=false, search=store.get("search2",false), nat=store.get("nat",false);
 $("web").textContent=search?"🌐 On":"🌐 Off";
 $("nat").textContent=nat?"🎙️ On":"🎙️ Off";
-$("key").value=key; $("spk").textContent=speak?"🔊 On":"🔇 Off";
+let gq=store.get("gq","");
+$("key").value=key;$("gqkey").value=gq; $("spk").textContent=speak?"🔊 On":"🔇 Off";
 
 function add(role,text){
   const d=document.createElement("div");
@@ -257,9 +261,29 @@ function nowStr(){
   return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())+" ("+days[d.getDay()]+")";
 }
 
+async function groqChat(c,sys,web){
+  const msgs=[{role:"system",content:sys+(web?"":" (Abhi tumhare paas web search nahi hai.)")}].concat(
+    c.map(m=>({role:m.role==="model"?"assistant":"user",content:m.parts[0].text})));
+  const ac=new AbortController();const to=setTimeout(()=>ac.abort(),30000);
+  let r;
+  try{
+    r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+      method:"POST",signal:ac.signal,
+      headers:{"Authorization":"Bearer "+gq,"Content-Type":"application/json"},
+      body:JSON.stringify({model:web?"groq/compound-mini":"llama-3.3-70b-versatile",messages:msgs,temperature:0.6,max_tokens:600})
+    });
+  }catch(e){clearTimeout(to);throw new Error("Backup AI (Groq) tak pahunch nahi paye. Net check karo.");}
+  clearTimeout(to);
+  if(r.status===401)throw new Error("Groq key galat hai. ⚙️ me dobara daalo.");
+  if(r.status===429)throw new Error("Gemini aur Groq dono ki free limit abhi khatam hai. Thodi der baad try karo.");
+  if(!r.ok)throw new Error("Groq error "+r.status);
+  const j=await r.json();
+  return j.choices?.[0]?.message?.content||"(khaali jawab)";
+}
+
 async function ask(text){
   if(busy)return;
-  if(!key){add("model","Pehle ⚙️ me Gemini API key daalo.");$("set").style.display="flex";return;}
+  if(!key&&!gq){add("model","Pehle ⚙️ me Gemini API key daalo.");$("set").style.display="flex";return;}
   busy=true;
   add("user",text);
   hist.push({role:"user",parts:[{text}]});
@@ -276,8 +300,8 @@ async function ask(text){
   try{
     let c=hist.slice(-8);
     while(c.length&&c[0].role!=="user")c.shift();
-    let r,j,useTools=search;
-    for(let i=0;i<MODELS.length;i++){
+    let r={ok:false,status:429},j={},useTools=search;
+    for(let i=0;i<(key?MODELS.length:0);i++){
       const ac=new AbortController();const to=setTimeout(()=>ac.abort(),30000);
       try{
         const body={system_instruction:{parts:[{text:sys}]},contents:c};
@@ -296,11 +320,16 @@ async function ask(text){
       wait.textContent="Thoda busy hai, dusra model try kar raha hoon ("+(i+1)+"/"+MODELS.length+")…";
       await new Promise(s=>setTimeout(s,1200));
     }
-    if(!r.ok&&r.status===429) throw new Error("Free limit abhi khatam hai. Thodi der ruko (1 min) ya dopahar 1:30 baje (IST) ke baad try karo. 🌐 aur 🎙️ Off rakho to limit kam khayegi.");
-    if(!r.ok) throw new Error(j.error?.message||"Error "+r.status);
-    let out=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"(khaali jawab)";
-    let extra="";
-    const gc=j.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    let fromGroq=false,gout="";
+    if(!r.ok&&gq){
+      wait.textContent="Gemini busy/limit me hai, backup AI (Groq) try kar raha hoon…";
+      gout=await groqChat(c,sys,search);fromGroq=true;
+    }
+    if(!fromGroq&&!r.ok&&r.status===429) throw new Error("Free limit abhi khatam hai. Thodi der ruko (1 min) ya dopahar 1:30 baje (IST) ke baad try karo. 🌐 aur 🎙️ Off rakho to limit kam khayegi.");
+    if(!fromGroq&&!r.ok) throw new Error(j.error?.message||"Error "+r.status);
+    let out=fromGroq?gout:(j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"(khaali jawab)");
+    let extra=fromGroq?(search?"\n⚡ Backup AI (Groq) se jawab, web search ke saath.":"\n⚡ Backup AI (Groq) se jawab."):"";
+    const gc=fromGroq?null:j.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if(gc&&gc.length){
       const names=[...new Set(gc.map(g=>g.web?.title).filter(Boolean))].slice(0,3);
       if(names.length)extra+="\n🌐 Source: "+names.join(", ");
@@ -321,7 +350,7 @@ async function ask(text){
     wait.textContent=out;
     hist.push({role:"model",parts:[{text:out}]});
     store.set("hist",hist.slice(-40));
-    say(out.replace(/[📝⏰⚠️🌐].*/g,""));
+    say(out.replace(/[📝⏰⚠️🌐⚡].*/g,""));
   }catch(e){
     wait.textContent="Dikkat aayi: "+e.message;
     hist.pop();
@@ -348,6 +377,7 @@ $("clr").onclick=()=>{
   hist=[];store.set("hist",hist);showHist();
 };
 $("cfg").onclick=()=>{$("set").style.display=$("set").style.display==="flex"?"none":"flex"};
+$("saveGq").onclick=()=>{gq=$("gqkey").value.trim();store.set("gq",gq);$("set").style.display="none";add("model",gq?"✅ Groq backup save ho gaya.":"Groq key hata di.");};
 $("saveKey").onclick=()=>{key=$("key").value.trim();store.set("key",key);$("set").style.display="none";};
 $("nat").onclick=()=>{nat=!nat;store.set("nat",nat);$("nat").textContent=nat?"🎙️ On":"🎙️ Off";};
 $("web").onclick=()=>{search=!search;store.set("search2",search);$("web").textContent=search?"🌐 On":"🌐 Off";};
