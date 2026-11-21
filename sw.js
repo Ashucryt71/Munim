@@ -1,4 +1,4 @@
-const C = "munim-v14";
+const C = "munim-v17";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => {
   e.waitUntil(

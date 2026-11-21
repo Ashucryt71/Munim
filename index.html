@@ -13,17 +13,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#04070c;--card:#0b1626;--card2:#0f1f36;--line:#1d3350;--me:#1f5fae;--ai:#0e1520;--tx:#dbe5f1;--mut:#7f90a6;--acc:#4da3ff;--glow:rgba(77,163,255,.35)}
+:root{color-scheme:dark;--bg:#04070c;--card:#0b1626;--card2:#0f1f36;--line:#1d3350;--me:#1f5fae;--ai:#0e1520;--tx:#dbe5f1;--mut:#7f90a6;--acc:#4da3ff;--glow:rgba(77,163,255,.35);--glow0:#0d2347;--hdr1:#0c1a2e;--panel:#07101c;--field:#060d17;--set:#08111d;--me1:#123a6e;--me2:#0d2a52;--meb:#1f4f8f;--btn:#123a6e;--btn2:#1a4d8f;--gridc:rgba(77,163,255,.035);--alertbg:#0d2a52}
+:root[data-theme="steel"]{--bg:#07090c;--card:#12161c;--card2:#1a2029;--line:#2b3440;--ai:#10141a;--tx:#e4e9ef;--mut:#8a95a3;--acc:#9db6d3;--glow:rgba(157,182,211,.3);--glow0:#1b222c;--hdr1:#171d26;--panel:#0d1117;--field:#0a0d12;--set:#0d1117;--me1:#2a3544;--me2:#1f2833;--meb:#3b4a5d;--btn:#2a3544;--btn2:#3a4858;--gridc:rgba(157,182,211,.035);--alertbg:#1f2833}
+:root[data-theme="black"]{--bg:#000;--card:#070b12;--card2:#0b121d;--line:#14233a;--ai:#05080d;--tx:#dfe8f4;--mut:#74869c;--acc:#4da3ff;--glow:rgba(77,163,255,.3);--glow0:#050c18;--hdr1:#03060b;--panel:#000;--field:#02050a;--set:#02050a;--me1:#0e3160;--me2:#09224a;--meb:#1a4a86;--btn:#0e3160;--btn2:#16467f;--gridc:rgba(77,163,255,.025);--alertbg:#09224a}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{color:var(--tx);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;
   background:
-   radial-gradient(900px 420px at 50% -140px,#0d2347 0%,transparent 72%),
-   linear-gradient(rgba(77,163,255,.035) 1px,transparent 1px) 0 0/30px 30px,
-   linear-gradient(90deg,rgba(77,163,255,.035) 1px,transparent 1px) 0 0/30px 30px,
+   radial-gradient(900px 420px at 50% -140px,var(--glow0) 0%,transparent 72%),
+   linear-gradient(var(--gridc) 1px,transparent 1px) 0 0/30px 30px,
+   linear-gradient(90deg,var(--gridc) 1px,transparent 1px) 0 0/30px 30px,
    var(--bg)}
 button,input,textarea{font-family:inherit}
-header{padding:10px 14px 8px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(#0c1a2e,#07101c);border-bottom:1px solid var(--line)}
+header{padding:10px 14px 8px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(var(--hdr1),var(--panel));border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:12px}
 .reactor{width:36px;height:36px;border-radius:50%;border:2px solid var(--acc);box-shadow:0 0 12px var(--glow),inset 0 0 8px var(--glow);position:relative;flex:none}
 .reactor::before{content:"";position:absolute;inset:6px;border-radius:50%;border:1.5px dashed var(--acc);animation:spin 16s linear infinite}
@@ -37,29 +39,35 @@ header h1 small{font-family:"Segoe UI",system-ui,sans-serif;font-size:11px;lette
 .tools button{flex:none;background:transparent;border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:5px 10px;font-size:13px}
 .tools button:active{background:var(--card2);border-color:var(--acc)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-.tabs{display:flex;padding:0 10px;background:#07101c;border-bottom:1px solid var(--line)}
+.tabs{display:flex;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line)}
 .tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--mut);padding:11px 4px;font-size:14px}
 .tabs button.on{color:var(--acc);border-bottom-color:var(--acc);text-shadow:0 0 10px var(--glow)}
 main{flex:1;overflow-y:auto;padding:12px 14px}
 .msg{max-width:86%;padding:10px 13px;margin:9px 0;line-height:1.45;white-space:pre-wrap}
-.me{margin-left:auto;background:linear-gradient(135deg,#123a6e,#0d2a52);border:1px solid #1f4f8f;border-radius:14px 4px 14px 14px}
+.me{margin-left:auto;background:linear-gradient(135deg,var(--me1),var(--me2));border:1px solid var(--meb);border-radius:14px 4px 14px 14px}
 .ai{background:var(--ai);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:4px 14px 14px 14px}
-.bar{display:flex;gap:8px;padding:10px 12px;background:#07101c;border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom))}
-.bar input,textarea,.set input{flex:1;min-width:0;background:#060d17;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:16px}
+.bar{display:flex;gap:8px;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.bar input,textarea,.set input{flex:1;min-width:0;background:var(--field);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:16px}
 .bar input:focus,.set input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow);outline:none}
-.bar button{border:1px solid #1f4f8f;border-radius:8px;padding:0 15px;font-size:20px;background:#123a6e;color:#fff}
-.bar button:active{background:#1a4d8f}
+.bar button{border:1px solid var(--meb);border-radius:8px;padding:0 15px;font-size:20px;background:var(--btn);color:#fff}
+.bar button:active{background:var(--btn2)}
 .note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:6px;padding:10px 12px;margin:8px 0;display:flex;gap:8px;align-items:flex-start}
 .note span{flex:1;white-space:pre-wrap}
 .note small{display:block;color:var(--mut);margin-top:2px}
 .note button{background:none;border:0;color:var(--mut);font-size:18px}
-.set{display:none;padding:12px 14px;background:#08111d;border-bottom:1px solid var(--line);gap:8px;flex-direction:column;max-height:60vh;overflow-y:auto}
+.set{display:none;padding:12px 14px;background:var(--set);border-bottom:1px solid var(--line);gap:8px;flex-direction:column;max-height:60vh;overflow-y:auto}
 .set small{color:var(--mut)}
 .hide{display:none!important}
+#hfs{padding:6px 14px;font-size:13px;color:var(--acc);background:var(--panel);border-bottom:1px solid var(--line)}
+.msg,.note{font-size:var(--fs,16px)}
+.set textarea{min-height:90px;resize:vertical;flex:none;width:100%}
+.rowx{display:flex;gap:6px}
+.mini{flex:1;padding:9px 6px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--tx);font-size:14px}
+.mini.on{border-color:var(--acc);color:var(--acc);box-shadow:0 0 8px var(--glow)}
 #rbar{flex-direction:column}
 #rbar .row{display:flex;gap:8px}
 #alerts{position:fixed;top:0;left:0;right:0;z-index:9;padding:8px;padding-top:max(8px,env(safe-area-inset-top))}
-.alert{background:#0d2a52;color:var(--tx);border:1px solid var(--acc);box-shadow:0 0 16px var(--glow);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;font-size:17px}
+.alert{background:var(--alertbg);color:var(--tx);border:1px solid var(--acc);box-shadow:0 0 16px var(--glow);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;font-size:17px}
 .alert span{flex:1}
 .alert button{background:var(--acc);color:#04070c;border:0;border-radius:6px;padding:8px 12px;font-size:15px;font-weight:600}
 </style>
@@ -69,7 +77,7 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
 <header>
   <div class="brand">
     <span class="reactor" aria-hidden="true"></span>
-    <h1>MUNIM JI<small>v14</small></h1>
+    <h1>MUNIM JI<small>v17</small></h1>
   </div>
   <div class="tools">
     <button id="brf">☀️ Brief</button>
@@ -83,7 +91,13 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
   </div>
 </header>
 <div class="set" id="set">
-  <small>Gemini API key (aistudio.google.com se free). Sirf is device me save hoti hai.</small>
+  <small>🧠 Mere baare me (Munim ji ko ye yaad rahega). Munim ji kaam ki baatein khud bhi yahan jodta hai. Ye har sawal ke saath AI ko jaata hai, to password, bank ya sehat ki baatein mat likho.</small>
+  <textarea id="prof" rows="5" placeholder="Jaise: Mera naam Ashu hai. Mujhe chhote jawab pasand hain."></textarea>
+  <button id="saveProf" style="padding:8px;border-radius:8px;border:0;background:var(--me);color:#fff">Save profile</button>
+  <small style="margin-top:8px">🎨 Look: rang aur text ka size</small>
+  <div class="rowx"><button class="mini" id="thNavy">Navy</button><button class="mini" id="thSteel">Steel</button><button class="mini" id="thBlack">Black</button></div>
+  <div class="rowx"><button class="mini" id="fsM">A−</button><button class="mini" id="fsP">A+</button></div>
+  <small style="margin-top:8px">Gemini API key (aistudio.google.com se free). Sirf is device me save hoti hai.</small>
   <input id="key" type="password" placeholder="API key paste karo">
   <button id="saveKey" style="padding:8px;border-radius:8px;border:0;background:var(--me);color:#fff">Save</button>
   <small style="margin-top:8px">Backup AI: Groq key (console.groq.com/keys se free). Gemini ki limit khatam ho to ye chalega.</small>
@@ -99,6 +113,7 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
   <button id="tNotes">📝 Notes</button>
   <button id="tRem">⏰ Reminders</button>
 </div>
+<div id="hfs" class="hide">🎧 Hands-free band hai</div>
 <div class="bar hide" id="nsrch" style="border-top:0;border-bottom:1px solid var(--line)">
   <input id="nq" placeholder="🔍 Notes me khojo…" autocomplete="off">
   <button id="nexp" title="Notes download karo">⬇️</button>
@@ -123,6 +138,7 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
     <input id="rdt" type="datetime-local">
     <button id="radd">＋</button>
   </div>
+  <label style="display:flex;align-items:center;gap:8px;color:var(--mut);font-size:14px"><input type="checkbox" id="rrep" style="flex:none;width:20px;height:20px;padding:0;accent-color:var(--acc)"> 🔁 Roz isi time pe dohrao</label>
 </div>
 
 <script>
@@ -132,15 +148,16 @@ let applying=false,localUpd=0,syncing=false,pushTimer=null,ghSha=null;
 const store={
   get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}
-    if((k==="notes"||k==="rems")&&!applying)touchSync();}
+    if((k==="notes"||k==="rems"||k==="profile")&&!applying)touchSync();}
 };
 let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",[]), speak=store.get("speak",true), rems=store.get("rems",[]);
 let lastSayP=Promise.resolve(),rec=null,hf=false;
+let profile=store.get("profile",""),theme=store.get("theme","navy"),fs=store.get("fs",16);
 let busy=false, search=store.get("search2",false), nat=store.get("nat",false);
 $("web").textContent=search?"🌐 On":"🌐 Off";
 $("nat").textContent=nat?"🎙️ On":"🎙️ Off";
 let gq=store.get("gq","");
-$("key").value=key;$("gqkey").value=gq; $("spk").textContent=speak?"🔊 On":"🔇 Off";
+$("key").value=key;$("gqkey").value=gq;$("prof").value=profile; $("spk").textContent=speak?"🔊 On":"🔇 Off";
 
 function add(role,text){
   const d=document.createElement("div");
@@ -186,6 +203,14 @@ renderNotes();
 function fmt(ms){
   return new Date(ms).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit",hour12:true});
 }
+function gcalUrl(r){
+  const f=x=>{const t=new Date(x),p=n=>String(n).padStart(2,"0");return t.getFullYear()+p(t.getMonth()+1)+p(t.getDate())+"T"+p(t.getHours())+p(t.getMinutes())+"00";};
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(r.text)+"&dates="+f(r.at)+"/"+f(r.at+30*60000)+"&details="+encodeURIComponent("Munim ji se")+(r.rep==="daily"?"&recur=RRULE:FREQ=DAILY":"");
+}
+function alarmUrl(r){
+  const d=new Date(r.at);
+  return "intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR="+d.getHours()+";i.android.intent.extra.alarm.MINUTES="+d.getMinutes()+";S.android.intent.extra.alarm.MESSAGE="+encodeURIComponent(r.text)+";end";
+}
 function renderRems(){
   const box=$("rems");box.innerHTML="";
   if(!rems.length){box.innerHTML='<p style="color:var(--mut)">Abhi koi reminder nahi. Chat me bolo "kal 5 baje doodh lana yaad dilana" ya neeche se daalo.</p>';return;}
@@ -194,11 +219,22 @@ function renderRems(){
     const s=document.createElement("span");
     s.textContent=(r.done?"✅ ":"⏰ ")+r.text;
     const sm=document.createElement("small");
-    sm.textContent=fmt(r.at)+(r.done?(r.late?" · chhoot gaya tha":" · ho gaya"):"");
+    sm.textContent=fmt(r.at)+(r.rep==="daily"?" · 🔁 roz":"")+(r.done?(r.late?" · chhoot gaya tha":" · ho gaya"):"");
     s.appendChild(sm);
+    d.appendChild(s);
+    if(!r.done){
+      const c=document.createElement("button");c.textContent="📅";c.title="Google Calendar me jodo (app band ho tab bhi bajega)";
+      c.onclick=()=>{window.open(gcalUrl(r),"_blank");};
+      d.appendChild(c);
+      if(r.at-Date.now()<=86400000){
+        const al=document.createElement("button");al.textContent="🔔";al.title="Phone ki Clock app me alarm";
+        al.onclick=()=>{location.href=alarmUrl(r);};
+        d.appendChild(al);
+      }
+    }
     const b=document.createElement("button");b.textContent="🗑";
     b.onclick=()=>{rems=rems.filter(x=>x.id!==r.id);store.set("rems",rems);renderRems()};
-    d.append(s,b);box.appendChild(d);
+    d.appendChild(b);box.appendChild(d);
   });
 }
 renderRems();
@@ -211,25 +247,35 @@ function pickVoice(){
   }catch(e){return null}
 }
 if(window.speechSynthesis)speechSynthesis.onvoiceschanged=()=>{};
-function browserSay(t){
+function browserSay(t,onStart){
   return new Promise(res=>{
-    if(!window.speechSynthesis)return res();
+    if(!window.speechSynthesis){if(onStart)onStart();return res();}
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";
     const v=pickVoice();if(v)u.voice=v;
     u.rate=0.92;u.pitch=1;
-    u.onend=()=>res();u.onerror=()=>res();
-    setTimeout(res,90000);
+    let done=false,st=false,real=false;const t0=Date.now();
+    const start=()=>{if(!st){st=true;if(onStart)onStart();}};
+    let iv,sf,mx;
+    const fin=()=>{start();if(done)return;done=true;clearInterval(iv);clearTimeout(sf);clearTimeout(mx);res();};
+    u.onstart=()=>{real=true;start();};u.onend=fin;u.onerror=fin;
+    // Android pe onend aksar nahi aata, to speaking state bhi dekhte hain
+    iv=setInterval(()=>{
+      const idle=!speechSynthesis.speaking&&!speechSynthesis.pending,el=Date.now()-t0;
+      if(idle&&((real&&el>800)||el>7000))fin();
+    },300);
+    sf=setTimeout(start,1500);
+    mx=setTimeout(fin,Math.min(90000,t.length*120+4000));
     speechSynthesis.speak(u);
   });
 }
 const TTS_MODELS=["gemini-2.5-flash-preview-tts","gemini-2.5-flash-tts"];
 let curSrc=null,sayId=0;
 function stopAudio(){try{curSrc&&curSrc.stop()}catch(e){};curSrc=null;}
-async function geminiSpeak(t,id){
-  if(!key||!actx)return false;
+async function geminiBuf(t){
+  if(!key||!actx)return null;
   for(const m of TTS_MODELS){
-    const ac=new AbortController();const to=setTimeout(()=>ac.abort(),20000);
+    const ac=new AbortController();const to=setTimeout(()=>ac.abort(),12000);
     try{
       const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent?key="+encodeURIComponent(key),{
         method:"POST",headers:{"Content-Type":"application/json"},signal:ac.signal,
@@ -239,21 +285,72 @@ async function geminiSpeak(t,id){
         })
       });
       clearTimeout(to);
+      if(r.status===429)return null;
       if(!r.ok)continue;
       const j=await r.json();
       const p=j.candidates?.[0]?.content?.parts?.find(x=>x.inlineData);
       if(!p)continue;
-      if(id!==sayId)return true;
       const rate=+(/rate=(\d+)/.exec(p.inlineData.mimeType||"")||[0,24000])[1];
       const bin=atob(p.inlineData.data),n=bin.length>>1;
       const buf=actx.createBuffer(1,n,rate),ch=buf.getChannelData(0);
       for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v&0x8000)v-=0x10000;ch[i]=v/32768;}
-      stopAudio();
-      const src=actx.createBufferSource();src.buffer=buf;src.connect(actx.destination);
-      return await new Promise(res=>{src.onended=()=>res(true);curSrc=src;src.start();});
+      return buf;
     }catch(e){clearTimeout(to);}
   }
-  return false;
+  return null;
+}
+function playBuf(buf,id){
+  return new Promise(res=>{
+    if(id!==sayId)return res();
+    stopAudio();
+    const src=actx.createBufferSource();src.buffer=buf;src.connect(actx.destination);
+    src.onended=()=>res();curSrc=src;src.start();
+  });
+}
+async function geminiSpeak(t,id){
+  const buf=await geminiBuf(t);
+  if(!buf)return false;
+  if(id!==sayId)return true;
+  await playBuf(buf,id);
+  return true;
+}
+function splitChunks(text){
+  const parts=[];
+  text.split(/(?<=[.!?।\n])\s*/).map(x=>x.trim()).filter(Boolean).forEach(p=>{
+    while(p.length>260){let i=p.lastIndexOf(" ",240);if(i<80)i=240;parts.push(p.slice(0,i).trim());p=p.slice(i).trim();}
+    if(p)parts.push(p);
+  });
+  const out=[];let cur="";
+  parts.forEach(p=>{cur=cur?cur+" "+p:p;if(cur.length>=70){out.push(cur);cur="";}});
+  if(cur){if(out.length&&cur.length<25)out[out.length-1]+=" "+cur;else out.push(cur);}
+  return out;
+}
+// Text tabhi dikhta hai jab uska hissa bolna shuru hota hai, taaki awaaz aur text saath chalein
+async function presentReply(el,body,extra){
+  const full=body+extra;
+  const scroll=()=>{$("chat").scrollTop=$("chat").scrollHeight;};
+  if(!speak){el.textContent=full;scroll();return;}
+  const id=++sayId;stopAudio();if(window.speechSynthesis)speechSynthesis.cancel();
+  const chunks=splitChunks(body);
+  const clean=x=>x.replace(/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F]/gu,"").trim();
+  let shown="",useBrowser=!(nat&&actx&&key);
+  const bufs=[];
+  const want=i=>{if(!useBrowser&&i<chunks.length&&!bufs[i]){const c=clean(chunks[i]);bufs[i]=c?geminiBuf(c):Promise.resolve(null);}};
+  try{
+    want(0);want(1);
+    for(let i=0;i<chunks.length;i++){
+      if(id!==sayId)break;
+      const sp=clean(chunks[i]);
+      const reveal=()=>{shown+=(shown?" ":"")+chunks[i];el.textContent=shown;scroll();};
+      if(!sp){reveal();continue;}
+      let buf=null;
+      if(!useBrowser){buf=await bufs[i];if(!buf)useBrowser=true;else want(i+2);}
+      if(id!==sayId)break;
+      if(buf){reveal();await playBuf(buf,id);}
+      else await browserSay(sp,reveal);
+    }
+  }catch(e){}
+  el.textContent=full;scroll();
 }
 async function say(t){
   if(!speak)return;
@@ -297,7 +394,7 @@ function ring(r){
 function checkRems(){
   const now=Date.now();let ch=false;
   rems.forEach(r=>{
-    if(!r.done&&r.at<=now){r.done=true;r.late=(now-r.at)>120000;ch=true;ring(r);}
+    if(!r.done&&r.at<=now){r.late=(now-r.at)>120000;ch=true;ring(r);if(r.rep==="daily"){while(r.at<=now)r.at+=86400000;r.late=false;}else r.done=true;}
   });
   if(ch){store.set("rems",rems);renderRems();}
 }
@@ -305,8 +402,8 @@ setInterval(checkRems,15000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkRems();});
 setTimeout(checkRems,800);
 
-function addRem(at,text){
-  rems.push({id:Date.now()+Math.random(),at,text,done:false});
+function addRem(at,text,rep){
+  rems.push({id:Date.now()+Math.random(),at,text,done:false,rep:rep||""});
   store.set("rems",rems);renderRems();
 }
 
@@ -347,12 +444,13 @@ async function ask(text){
   const wait=add("model","…");
   const sys="Tum 'Munim ji' ho, ek desi, bharosemand personal assistant. Hinglish (Roman Hindi) me chhote, saaf jawab do. "+
    "Agar user kuch yaad rakhne ya note karne ko kahe, to jawab ke aakhir me alag line me likho: SAVE_NOTE: <note ka text>. "+
-   "Agar user kisi time pe yaad dilane ko kahe, to jawab ke aakhir me alag line me likho: REMINDER: YYYY-MM-DD HH:MM | <kya yaad dilana hai>. "+
+   "Agar user kisi time pe yaad dilane ko kahe, to jawab ke aakhir me alag line me likho: REMINDER: YYYY-MM-DD HH:MM | <kya yaad dilana hai>. Agar roz/har din dohrana ho to line ke aakhir me ' | daily' jodo. "+
+   "Agar user apne baare me koi pakki, kaam ki baat bataye (naam, kaam, pasand, rozmarra ki aadat), to alag line me likho: SAVE_PROFILE: <ek chhoti baat>. Password, bank/paise ke number, sehat ya kisi aur ki nijee baatein kabhi save mat karo. "+
    "Time 24 ghante format me, user ke local time me likho. Aaj abhi ka local time: "+nowStr()+". "+
    "'kal', 'subah', 'shaam', 'parson' jaise shabd isi time se hisaab karke date nikalo. Subah=08:00, dopahar=13:00, shaam=18:00, raat=21:00 maan lo agar exact time na bataye. "+
    "Reminder lagane pe jawab me bhi bata do ki kab yaad dilaoge. "+
    (search?"Taaza ya badalti cheezon (news, mausam, rate, score, aaj ki khabar) ke liye web search use karo, aur jawab chhota rakho. ":"")+
-   "User ke pending reminders:\n"+(rems.filter(r=>!r.done).sort((a,b)=>a.at-b.at).map(r=>fmt(r.at)+" - "+r.text).join("\n")||"(koi nahi)")+"\n"+
+   (profile?"User ke baare me (tumhe pata hai):\n"+profile.slice(0,1500)+"\n":"")+"User ke pending reminders:\n"+(rems.filter(r=>!r.done).sort((a,b)=>a.at-b.at).map(r=>fmt(r.at)+" - "+r.text).join("\n")||"(koi nahi)")+"\n"+
    "User ki saved notes:\n"+(notes.join("\n")||"(koi nahi)");
   try{
     let c=hist.slice(-8);
@@ -395,19 +493,30 @@ async function ask(text){
     const m=out.match(/SAVE_NOTE:\s*(.+)/);
     if(m){notes.push(m[1].trim());store.set("notes",notes);renderNotes();extra+="\n📝 Note save ho gaya.";}
 
-    const re=/REMINDER:\s*(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})\s*\|\s*(.+)/g;
+    const re=/REMINDER:\s*(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})\s*\|\s*([^|\n]+?)\s*(?:\|\s*(daily|roz)\s*)?(?:\n|$)/g;
     let rm;
     while((rm=re.exec(out))!==null){
       const at=new Date(+rm[1],+rm[2]-1,+rm[3],+rm[4],+rm[5]).getTime();
       if(isNaN(at)||at<=Date.now()){extra+="\n⚠️ Wo time nikal chuka hai, reminder nahi laga. Naya time batao.";}
-      else{addRem(at,rm[6].trim());extra+="\n⏰ Reminder laga diya: "+fmt(at);}
+      else{addRem(at,rm[6].trim(),rm[7]?"daily":"");extra+="\n⏰ Reminder laga diya: "+fmt(at)+(rm[7]?" (roz)":"");}
     }
 
-    out=out.replace(/^\s*(SAVE_NOTE|REMINDER):.*$/gm,"").trim()+extra;
-    wait.textContent=out;
+    let pch=false;
+    for(const x of out.matchAll(/SAVE_PROFILE:\s*(.+)/g)){
+      const f=x[1].trim();
+      if(f&&!profile.includes(f)){profile=(profile?profile.replace(/\s+$/,"")+"\n":"")+"- "+f;pch=true;extra+="\n🧠 Yaad rakh liya: "+f;}
+    }
+    if(pch){
+      if(profile.length>1500)profile=profile.slice(profile.length-1500).replace(/^[^\n]*\n/,"");
+      store.set("profile",profile);$("prof").value=profile;
+    }
+
+    const body=out.replace(/^\s*(SAVE_NOTE|REMINDER|SAVE_PROFILE):.*$/gm,"").trim();
+    out=body+extra;
     hist.push({role:"model",parts:[{text:out}]});
     store.set("hist",hist.slice(-40));
-    lastSayP=say(out.replace(/[📝⏰⚠️🌐⚡].*/g,""));
+    if(speak)wait.textContent="…";
+    lastSayP=presentReply(wait,body,extra);
   }catch(e){
     wait.textContent="Dikkat aayi: "+e.message;
     hist.pop();
@@ -474,10 +583,10 @@ function submit(text){
   if(r.done){tab("chat");r.run();return Promise.resolve();}
   add("user",text);
   hist.push({role:"user",parts:[{text}]});
-  add("model",r.reply);
+  const lel=add("model",speak?"…":r.reply);
   hist.push({role:"model",parts:[{text:r.reply}]});
   store.set("hist",hist.slice(-40));
-  lastSayP=say(r.reply);
+  lastSayP=presentReply(lel,r.reply,"");
   return Promise.resolve();
 }
 
@@ -487,35 +596,50 @@ $("inp").addEventListener("keydown",e=>{if(e.key==="Enter")go()});
 
 /* ---------- mic aur hands-free ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-function updHf(){$("hf").textContent=hf?"🎧 On":"🎧 Off";$("hf").style.borderColor=hf?"var(--acc)":"";}
+function hfStatus(m){const e=$("hfs");if(!e)return;if(!hf){e.classList.add("hide");return;}e.classList.remove("hide");e.textContent=m;}
+function updHf(){$("hf").textContent=hf?"🎧 On":"🎧 Off";$("hf").style.borderColor=hf?"var(--acc)":"";hfStatus("🎧 Hands-free chalu");}
+function stopTalk(){sayId++;stopAudio();if(window.speechSynthesis)speechSynthesis.cancel();}
 function listen(chain){
   if(!SR){add("model","Is browser me voice input nahi hai. Chrome use karo.");hf=false;updHf();return;}
   if(rec)return;
   const r=new SR();rec=r;r.lang="hi-IN";r.interimResults=false;r.maxAlternatives=1;
-  let got=false;
-  $("mic").textContent="🔴";
+  let got=false,err="";
+  r.onstart=()=>{$("mic").textContent="🔴";if(chain)hfStatus("🎧 Sun raha hoon… bolo");};
   r.onresult=e=>{
     got=true;
     const t=(e.results[0][0].transcript||"").trim();
     if(!t)return;
-    submit(t).then(()=>lastSayP).then(()=>{if(chain&&hf)setTimeout(()=>listen(true),300);});
+    if(chain)hfStatus("🧠 Soch raha hoon…");
+    submit(t).then(()=>{if(chain)hfStatus("🔊 Bol raha hoon… (beech me screen touch karo to ruk jayega)");return lastSayP;})
+      .then(()=>{if(chain&&hf)setTimeout(()=>listen(true),200);});
   };
   r.onerror=e=>{
-    if(e.error==="not-allowed"||e.error==="service-not-allowed"){
-      hf=false;updHf();add("model","Mic ki permission nahi mili. Chrome me Site settings → Microphone → Allow karo.");
+    err=e.error||"";
+    if(err==="not-allowed"||err==="service-not-allowed"){
+      if(chain)hfStatus("⚠️ Mic band hai. Screen ek baar touch karo, ya Chrome me Site settings → Microphone → Allow karo.");
+      else add("model","Mic ki permission nahi mili. Chrome me Site settings → Microphone → Allow karo.");
+      if(!chain){hf=false;updHf();}
+    }else if(chain&&err!=="no-speech"&&err!=="aborted"){
+      hfStatus("⚠️ Mic dikkat: "+err+". Screen touch karo.");
     }
   };
   r.onend=()=>{
     rec=null;$("mic").textContent="🎤";
-    if(chain&&hf&&!got)setTimeout(()=>{if(hf&&!rec&&!busy)listen(true);},500);
+    if(chain&&hf&&!got&&err!=="not-allowed"&&err!=="service-not-allowed")setTimeout(()=>{if(hf&&!rec&&!busy)listen(true);},250);
   };
-  try{r.start()}catch(e){rec=null;$("mic").textContent="🎤";}
+  try{r.start()}catch(e){rec=null;$("mic").textContent="🎤";if(chain)hfStatus("⚠️ Mic start nahi hua. Screen touch karo.");}
 }
-$("mic").onclick=()=>{if(rec){try{rec.stop()}catch(e){}return;}listen(false);};
+// hands-free me screen touch = turant sunna shuru (aur bolna ruk jaye)
+document.addEventListener("pointerdown",e=>{
+  if(!hf||rec||busy)return;
+  if(e.target.closest&&e.target.closest("button,input,textarea"))return;
+  stopTalk();listen(true);
+});
+$("mic").onclick=()=>{if(rec){try{rec.stop()}catch(e){}return;}stopTalk();listen(false);};
 $("hf").onclick=()=>{
   hf=!hf;updHf();
-  if(hf){tab("chat");if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}listen(true);}
-  else{try{rec&&rec.stop()}catch(e){}sayId++;stopAudio();if(window.speechSynthesis)speechSynthesis.cancel();}
+  if(hf){tab("chat");if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}stopTalk();listen(true);}
+  else{try{rec&&rec.stop()}catch(e){}stopTalk();hfStatus("");}
 };
 $("nq").addEventListener("input",renderNotes);
 $("nexp").onclick=exportNotes;
@@ -547,7 +671,7 @@ $("radd").onclick=()=>{
   if(!t||!v)return;
   const at=new Date(v).getTime();
   if(isNaN(at)||at<=Date.now()){alert("Time aage ka chuno.");return;}
-  addRem(at,t);$("rinp").value="";$("rdt").value="";
+  addRem(at,t,$("rrep").checked?"daily":"");$("rinp").value="";$("rdt").value="";$("rrep").checked=false;
 };
 
 
@@ -588,12 +712,13 @@ async function syncNow(manual){
       if(rd&&rd.updated>localUpd){
         applying=true;
         notes=rd.notes||[];rems=rd.rems||[];
+        if(rd.profile!==undefined){profile=rd.profile;store.set("profile",profile);$("prof").value=profile;}
         store.set("notes",notes);store.set("rems",rems);
         applying=false;
         localUpd=rd.updated;store.set("upd",localUpd);
         renderNotes();renderRems();checkRems();
       }else if(!rd||localUpd>rd.updated){
-        try{await ghPut({notes,rems,updated:localUpd||Date.now()});}
+        try{await ghPut({notes,rems,profile,updated:localUpd||Date.now()});}
         catch(e){if(e.message==="conflict"&&tries===0)continue;throw e;}
       }
       break;
@@ -615,6 +740,22 @@ setTimeout(()=>syncNow(false),1200);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncNow(false);});
 setInterval(()=>{if(!document.hidden)syncNow(false);},60000);
 
+/* ---------- look aur profile ---------- */
+function applyLook(){
+  document.documentElement.setAttribute("data-theme",theme);
+  document.documentElement.style.setProperty("--fs",fs+"px");
+  const m=document.querySelector('meta[name="theme-color"]');
+  if(m)m.content={navy:"#04070c",steel:"#07090c",black:"#000000"}[theme]||"#04070c";
+  [["Navy","navy"],["Steel","steel"],["Black","black"]].forEach(p=>$("th"+p[0]).classList.toggle("on",theme===p[1]));
+}
+applyLook();
+$("thNavy").onclick=()=>{theme="navy";store.set("theme",theme);applyLook();};
+$("thSteel").onclick=()=>{theme="steel";store.set("theme",theme);applyLook();};
+$("thBlack").onclick=()=>{theme="black";store.set("theme",theme);applyLook();};
+$("fsM").onclick=()=>{fs=Math.max(13,fs-1);store.set("fs",fs);applyLook();};
+$("fsP").onclick=()=>{fs=Math.min(22,fs+1);store.set("fs",fs);applyLook();};
+$("saveProf").onclick=()=>{profile=$("prof").value.trim().slice(0,3000);store.set("profile",profile);$("set").style.display="none";add("model","🧠 Profile save ho gaya.");};
+
 /* ---------- subah ka brief ---------- */
 function runBrief(){
   if(busy)return;
@@ -629,10 +770,10 @@ function runBrief(){
   t+=notes.length?"\n\n📝 Notes ("+notes.length+"):\n"+notes.slice(-3).map(n=>"• "+(n.length>60?n.slice(0,60)+"…":n)).join("\n"):"\n\n📝 Abhi koi note nahi.";
   add("user","☀️ Subah ka brief");
   hist.push({role:"user",parts:[{text:"☀️ Subah ka brief"}]});
-  add("model",t);
+  const bel=add("model",speak?"…":t);
   hist.push({role:"model",parts:[{text:t}]});
   store.set("hist",hist.slice(-40));
-  lastSayP=say(t);
+  lastSayP=presentReply(bel,t,"");
 }
 $("brf").onclick=()=>{tab("chat");runBrief();};
 (function autoBrief(){
