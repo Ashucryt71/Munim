@@ -20,19 +20,28 @@ main{flex:1;overflow-y:auto;padding:10px 14px}
 .me{background:var(--me);margin-left:auto}
 .ai{background:var(--ai)}
 .bar{display:flex;gap:6px;padding:10px 14px;background:var(--card);padding-bottom:max(10px,env(safe-area-inset-bottom))}
-.bar input,textarea,.set input{flex:1;background:var(--bg);color:var(--tx);border:1px solid var(--mut);border-radius:10px;padding:10px;font-size:16px}
+.bar input,textarea,.set input{flex:1;min-width:0;background:var(--bg);color:var(--tx);border:1px solid var(--mut);border-radius:10px;padding:10px;font-size:16px}
 .bar button{border:0;border-radius:10px;padding:0 14px;font-size:20px;background:var(--me);color:#fff}
 .note{background:var(--card);border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:8px;align-items:flex-start}
 .note span{flex:1;white-space:pre-wrap}
+.note small{display:block;color:var(--mut)}
 .note button{background:none;border:0;color:var(--mut);font-size:18px}
 .set{display:none;padding:10px 14px;background:var(--card);gap:6px;flex-direction:column}
 .set small{color:var(--mut)}
 .hide{display:none!important}
+#rbar{flex-direction:column}
+#rbar .row{display:flex;gap:6px}
+#alerts{position:fixed;top:0;left:0;right:0;z-index:9;padding:8px;padding-top:max(8px,env(safe-area-inset-top))}
+.alert{background:var(--me);color:#fff;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;font-size:17px}
+.alert span{flex:1}
+.alert button{background:#fff;color:#000;border:0;border-radius:8px;padding:8px 12px;font-size:15px}
 </style>
 </head>
 <body>
+<div id="alerts"></div>
 <header>
-  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v2</small></h1>
+  <h1>🙏 Munim ji <small style="color:var(--mut);font-weight:400">v4</small></h1>
+  <button id="clr">🧹</button>
   <button id="spk">🔊 On</button>
   <button id="cfg">⚙️</button>
 </header>
@@ -44,9 +53,11 @@ main{flex:1;overflow-y:auto;padding:10px 14px}
 <div class="tabs">
   <button id="tChat" class="on">💬 Chat</button>
   <button id="tNotes">📝 Notes</button>
+  <button id="tRem">⏰ Reminders</button>
 </div>
 <main id="chat"></main>
 <main id="notes" class="hide"></main>
+<main id="rems" class="hide"></main>
 <div class="bar" id="bar">
   <button id="mic">🎤</button>
   <input id="inp" placeholder="Munim ji se bolo ya likho…" autocomplete="off">
@@ -56,6 +67,15 @@ main{flex:1;overflow-y:auto;padding:10px 14px}
   <input id="ninp" placeholder="Nayi note likho…">
   <button id="nadd">＋</button>
 </div>
+<div class="bar hide" id="rbar">
+  <div class="row">
+    <input id="rinp" placeholder="Kya yaad dilana hai?">
+  </div>
+  <div class="row">
+    <input id="rdt" type="datetime-local">
+    <button id="radd">＋</button>
+  </div>
+</div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -64,7 +84,8 @@ const store={
   get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 };
-let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",[]), speak=store.get("speak",true);
+let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",[]), speak=store.get("speak",true), rems=store.get("rems",[]);
+let busy=false;
 $("key").value=key; $("spk").textContent=speak?"🔊 On":"🔇 Off";
 
 function add(role,text){
@@ -73,8 +94,13 @@ function add(role,text){
   d.textContent=text; $("chat").appendChild(d);
   $("chat").scrollTop=$("chat").scrollHeight; return d;
 }
-hist.forEach(m=>add(m.role,m.parts[0].text));
-if(!hist.length) add("model","Namaste! Main Munim ji hoon. Kuch bhi poochho, ya bolo \"ye yaad rakhna…\" aur main note kar loonga.");
+const HELLO="Namaste! Main Munim ji hoon. Kuch bhi poochho, bolo \"ye yaad rakhna…\" to note kar loonga, ya bolo \"kal subah 8 baje yaad dilana…\" to reminder laga doonga.";
+function showHist(){
+  $("chat").innerHTML="";
+  hist.forEach(m=>add(m.role,m.parts[0].text));
+  if(!hist.length) add("model",HELLO);
+}
+showHist();
 
 function renderNotes(){
   $("notes").innerHTML="";
@@ -89,28 +115,108 @@ function renderNotes(){
 }
 renderNotes();
 
+function fmt(ms){
+  return new Date(ms).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit",hour12:true});
+}
+function renderRems(){
+  const box=$("rems");box.innerHTML="";
+  if(!rems.length){box.innerHTML='<p style="color:var(--mut)">Abhi koi reminder nahi. Chat me bolo "kal 5 baje doodh lana yaad dilana" ya neeche se daalo.</p>';return;}
+  rems.slice().sort((a,b)=>a.at-b.at).forEach(r=>{
+    const d=document.createElement("div");d.className="note";
+    const s=document.createElement("span");
+    s.textContent=(r.done?"✅ ":"⏰ ")+r.text;
+    const sm=document.createElement("small");
+    sm.textContent=fmt(r.at)+(r.done?(r.late?" · chhoot gaya tha":" · ho gaya"):"");
+    s.appendChild(sm);
+    const b=document.createElement("button");b.textContent="🗑";
+    b.onclick=()=>{rems=rems.filter(x=>x.id!==r.id);store.set("rems",rems);renderRems()};
+    d.append(s,b);box.appendChild(d);
+  });
+}
+renderRems();
+
+/* ---------- awaaz ---------- */
 function say(t){
   if(!speak||!window.speechSynthesis)return;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";speechSynthesis.speak(u);
 }
 
+/* ---------- reminders ---------- */
+let actx=null;
+document.addEventListener("pointerdown",()=>{
+  try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume();}catch(e){}
+},{once:false});
+function beep(){
+  if(!actx)return;
+  try{
+    [0,0.35,0.7].forEach(t=>{
+      const o=actx.createOscillator(),g=actx.createGain();
+      o.frequency.value=880;o.connect(g);g.connect(actx.destination);
+      g.gain.setValueAtTime(0.25,actx.currentTime+t);
+      o.start(actx.currentTime+t);o.stop(actx.currentTime+t+0.25);
+    });
+  }catch(e){}
+}
+function ring(r){
+  const txt=(r.late?"⏰ (chhoot gaya) ":"⏰ ")+r.text;
+  const a=document.createElement("div");a.className="alert";
+  const s=document.createElement("span");s.textContent=txt;
+  const b=document.createElement("button");b.textContent="Theek hai";
+  b.onclick=()=>a.remove();
+  a.append(s,b);$("alerts").appendChild(a);
+  add("model",txt);
+  beep();
+  try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300]);}catch(e){}
+  say("Yaad dilana. "+r.text);
+}
+function checkRems(){
+  const now=Date.now();let ch=false;
+  rems.forEach(r=>{
+    if(!r.done&&r.at<=now){r.done=true;r.late=(now-r.at)>120000;ch=true;ring(r);}
+  });
+  if(ch){store.set("rems",rems);renderRems();}
+}
+setInterval(checkRems,15000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkRems();});
+setTimeout(checkRems,800);
+
+function addRem(at,text){
+  rems.push({id:Date.now()+Math.random(),at,text,done:false});
+  store.set("rems",rems);renderRems();
+}
+
+/* ---------- AI chat ---------- */
+function nowStr(){
+  const d=new Date(),p=n=>String(n).padStart(2,"0");
+  const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())+" ("+days[d.getDay()]+")";
+}
+
 async function ask(text){
+  if(busy)return;
   if(!key){add("model","Pehle ⚙️ me Gemini API key daalo.");$("set").style.display="flex";return;}
+  busy=true;
   add("user",text);
   hist.push({role:"user",parts:[{text}]});
   const wait=add("model","…");
   const sys="Tum 'Munim ji' ho, ek desi, bharosemand personal assistant. Hinglish (Roman Hindi) me chhote, saaf jawab do. "+
    "Agar user kuch yaad rakhne ya note karne ko kahe, to jawab ke aakhir me alag line me likho: SAVE_NOTE: <note ka text>. "+
+   "Agar user kisi time pe yaad dilane ko kahe, to jawab ke aakhir me alag line me likho: REMINDER: YYYY-MM-DD HH:MM | <kya yaad dilana hai>. "+
+   "Time 24 ghante format me, user ke local time me likho. Aaj abhi ka local time: "+nowStr()+". "+
+   "'kal', 'subah', 'shaam', 'parson' jaise shabd isi time se hisaab karke date nikalo. Subah=08:00, dopahar=13:00, shaam=18:00, raat=21:00 maan lo agar exact time na bataye. "+
+   "Reminder lagane pe jawab me bhi bata do ki kab yaad dilaoge. "+
    "User ki saved notes:\n"+(notes.join("\n")||"(koi nahi)");
   try{
+    let c=hist.slice(-20);
+    while(c.length&&c[0].role!=="user")c.shift();
     let r,j;
     for(let i=0;i<MODELS.length;i++){
       const ac=new AbortController();const to=setTimeout(()=>ac.abort(),20000);
       try{
         r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODELS[i]+":generateContent?key="+encodeURIComponent(key),{
           method:"POST",headers:{"Content-Type":"application/json"},signal:ac.signal,
-          body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:hist.slice(-20)})
+          body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:c})
         });
         j=await r.json();
       }catch(e){
@@ -123,19 +229,31 @@ async function ask(text){
     }
     if(!r.ok) throw new Error(j.error?.message||"Error "+r.status);
     let out=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"(khaali jawab)";
+    let extra="";
+
     const m=out.match(/SAVE_NOTE:\s*(.+)/);
-    if(m){notes.push(m[1].trim());store.set("notes",notes);renderNotes();out=out.replace(/SAVE_NOTE:.*/,"").trim()+"\n📝 Note save ho gaya.";}
+    if(m){notes.push(m[1].trim());store.set("notes",notes);renderNotes();extra+="\n📝 Note save ho gaya.";}
+
+    const re=/REMINDER:\s*(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})\s*\|\s*(.+)/g;
+    let rm;
+    while((rm=re.exec(out))!==null){
+      const at=new Date(+rm[1],+rm[2]-1,+rm[3],+rm[4],+rm[5]).getTime();
+      if(isNaN(at)||at<=Date.now()){extra+="\n⚠️ Wo time nikal chuka hai, reminder nahi laga. Naya time batao.";}
+      else{addRem(at,rm[6].trim());extra+="\n⏰ Reminder laga diya: "+fmt(at);}
+    }
+
+    out=out.replace(/^\s*(SAVE_NOTE|REMINDER):.*$/gm,"").trim()+extra;
     wait.textContent=out;
     hist.push({role:"model",parts:[{text:out}]});
     store.set("hist",hist.slice(-40));
-    say(out.replace(/📝.*/,""));
+    say(out.replace(/[📝⏰⚠️].*/g,""));
   }catch(e){
     wait.textContent="Dikkat aayi: "+e.message;
     hist.pop();
-  }
+  }finally{busy=false;}
 }
 
-function go(){const t=$("inp").value.trim();if(!t)return;$("inp").value="";ask(t);}
+function go(){const t=$("inp").value.trim();if(!t||busy)return;$("inp").value="";ask(t);}
 $("send").onclick=go;
 $("inp").addEventListener("keydown",e=>{if(e.key==="Enter")go()});
 
@@ -150,17 +268,32 @@ $("mic").onclick=()=>{
   try{r.start()}catch(e){}
 };
 
+$("clr").onclick=()=>{
+  if(!confirm("Chat saaf kar doon? (Notes aur reminders safe rahenge)"))return;
+  hist=[];store.set("hist",hist);showHist();
+};
 $("cfg").onclick=()=>{$("set").style.display=$("set").style.display==="flex"?"none":"flex"};
 $("saveKey").onclick=()=>{key=$("key").value.trim();store.set("key",key);$("set").style.display="none";};
 $("spk").onclick=()=>{speak=!speak;store.set("speak",speak);$("spk").textContent=speak?"🔊 On":"🔇 Off";if(!speak&&window.speechSynthesis)speechSynthesis.cancel();};
 
 function tab(n){
-  $("chat").classList.toggle("hide",n);$("bar").classList.toggle("hide",n);
-  $("notes").classList.toggle("hide",!n);$("nbar").classList.toggle("hide",!n);
-  $("tChat").classList.toggle("on",!n);$("tNotes").classList.toggle("on",n);
+  const names=["chat","notes","rem"];
+  $("chat").classList.toggle("hide",n!=="chat");$("bar").classList.toggle("hide",n!=="chat");
+  $("notes").classList.toggle("hide",n!=="notes");$("nbar").classList.toggle("hide",n!=="notes");
+  $("rems").classList.toggle("hide",n!=="rem");$("rbar").classList.toggle("hide",n!=="rem");
+  $("tChat").classList.toggle("on",n==="chat");
+  $("tNotes").classList.toggle("on",n==="notes");
+  $("tRem").classList.toggle("on",n==="rem");
 }
-$("tChat").onclick=()=>tab(false);$("tNotes").onclick=()=>tab(true);
+$("tChat").onclick=()=>tab("chat");$("tNotes").onclick=()=>tab("notes");$("tRem").onclick=()=>tab("rem");
 $("nadd").onclick=()=>{const t=$("ninp").value.trim();if(!t)return;notes.push(t);store.set("notes",notes);$("ninp").value="";renderNotes();};
+$("radd").onclick=()=>{
+  const t=$("rinp").value.trim(),v=$("rdt").value;
+  if(!t||!v)return;
+  const at=new Date(v).getTime();
+  if(isNaN(at)||at<=Date.now()){alert("Time aage ka chuno.");return;}
+  addRem(at,t);$("rinp").value="";$("rdt").value="";
+};
 </script>
 </body>
 </html>
