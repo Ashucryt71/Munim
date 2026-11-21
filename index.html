@@ -64,7 +64,7 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
 <header>
   <div class="brand">
     <span class="reactor" aria-hidden="true"></span>
-    <h1>MUNIM JI<small>v12</small></h1>
+    <h1>MUNIM JI<small>v13</small></h1>
   </div>
   <div class="tools">
     <button id="brf">☀️ Brief</button>
@@ -297,15 +297,16 @@ async function groqChat(c,sys,web){
     r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
       method:"POST",signal:ac.signal,
       headers:{"Authorization":"Bearer "+gq,"Content-Type":"application/json"},
-      body:JSON.stringify({model:web?"groq/compound-mini":"llama-3.3-70b-versatile",messages:msgs,temperature:0.6,max_tokens:600})
+      body:JSON.stringify(Object.assign({model:web?"openai/gpt-oss-20b":"openai/gpt-oss-120b",messages:msgs,temperature:0.7,max_completion_tokens:1500,reasoning_effort:"low"},web?{tools:[{type:"browser_search"}]}:{}))
     });
   }catch(e){clearTimeout(to);throw new Error("Backup AI (Groq) tak pahunch nahi paye. Net check karo.");}
   clearTimeout(to);
   if(r.status===401)throw new Error("Groq key galat hai. ⚙️ me dobara daalo.");
+  if(r.status===404){let m="";try{m=(await r.json()).error?.message||""}catch(e){}throw new Error("Groq model nahi mila (404). "+m);}
   if(r.status===429)throw new Error("Gemini aur Groq dono ki free limit abhi khatam hai. Thodi der baad try karo.");
   if(!r.ok)throw new Error("Groq error "+r.status);
   const j=await r.json();
-  return j.choices?.[0]?.message?.content||"(khaali jawab)";
+  return (j.choices?.[0]?.message?.content||"").replace(/【[^】]*】/g,"").trim()||"(khaali jawab)";
 }
 
 async function ask(text){
