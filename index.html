@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#04070c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Munim ji</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap" rel="stylesheet">
@@ -64,7 +69,7 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
 <header>
   <div class="brand">
     <span class="reactor" aria-hidden="true"></span>
-    <h1>MUNIM JI<small>v13</small></h1>
+    <h1>MUNIM JI<small>v14</small></h1>
   </div>
   <div class="tools">
     <button id="brf">☀️ Brief</button>
@@ -73,6 +78,7 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
     <button id="web">🌐 On</button>
     <button id="spk">🔊 On</button>
     <button id="nat">🎙️ Off</button>
+    <button id="hf">🎧 Off</button>
     <button id="cfg">⚙️</button>
   </div>
 </header>
@@ -92,6 +98,10 @@ main{flex:1;overflow-y:auto;padding:12px 14px}
   <button id="tChat" class="on">💬 Chat</button>
   <button id="tNotes">📝 Notes</button>
   <button id="tRem">⏰ Reminders</button>
+</div>
+<div class="bar hide" id="nsrch" style="border-top:0;border-bottom:1px solid var(--line)">
+  <input id="nq" placeholder="🔍 Notes me khojo…" autocomplete="off">
+  <button id="nexp" title="Notes download karo">⬇️</button>
 </div>
 <main id="chat"></main>
 <main id="notes" class="hide"></main>
@@ -125,6 +135,7 @@ const store={
     if((k==="notes"||k==="rems")&&!applying)touchSync();}
 };
 let key=store.get("key",""), notes=store.get("notes",[]), hist=store.get("hist",[]), speak=store.get("speak",true), rems=store.get("rems",[]);
+let lastSayP=Promise.resolve(),rec=null,hf=false;
 let busy=false, search=store.get("search2",false), nat=store.get("nat",false);
 $("web").textContent=search?"🌐 On":"🌐 Off";
 $("nat").textContent=nat?"🎙️ On":"🎙️ Off";
@@ -146,15 +157,29 @@ function showHist(){
 showHist();
 
 function renderNotes(){
+  const q=($("nq")?$("nq").value:"").trim().toLowerCase();
   $("notes").innerHTML="";
-  if(!notes.length){$("notes").innerHTML='<p style="color:var(--mut)">Abhi koi note nahi.</p>';}
+  let shown=0;
   notes.forEach((n,i)=>{
+    if(q&&!n.toLowerCase().includes(q))return;
+    shown++;
     const d=document.createElement("div");d.className="note";
     const s=document.createElement("span");s.textContent=n;
     const b=document.createElement("button");b.textContent="🗑";
     b.onclick=()=>{notes.splice(i,1);store.set("notes",notes);renderNotes()};
     d.append(s,b);$("notes").appendChild(d);
   });
+  if(!shown)$("notes").innerHTML='<p style="color:var(--mut)">'+(notes.length?"Is naam ka koi note nahi mila.":"Abhi koi note nahi.")+'</p>';
+}
+function exportNotes(){
+  const d=new Date(),p=n=>String(n).padStart(2,"0"),ds=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+  let t="MUNIM JI - Backup ("+ds+")\n\nNOTES\n"+(notes.length?notes.map((n,i)=>(i+1)+". "+n).join("\n"):"(koi nahi)")+"\n\nREMINDERS\n"+
+    (rems.length?rems.slice().sort((a,b)=>a.at-b.at).map(r=>(r.done?"[ho gaya] ":"[baaki] ")+fmt(r.at)+" - "+r.text).join("\n"):"(koi nahi)")+"\n";
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([t],{type:"text/plain;charset=utf-8"}));
+  a.download="munim-backup-"+ds+".txt";
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
 }
 renderNotes();
 
@@ -187,12 +212,16 @@ function pickVoice(){
 }
 if(window.speechSynthesis)speechSynthesis.onvoiceschanged=()=>{};
 function browserSay(t){
-  if(!window.speechSynthesis)return;
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";
-  const v=pickVoice();if(v)u.voice=v;
-  u.rate=0.92;u.pitch=1;
-  speechSynthesis.speak(u);
+  return new Promise(res=>{
+    if(!window.speechSynthesis)return res();
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";
+    const v=pickVoice();if(v)u.voice=v;
+    u.rate=0.92;u.pitch=1;
+    u.onend=()=>res();u.onerror=()=>res();
+    setTimeout(res,90000);
+    speechSynthesis.speak(u);
+  });
 }
 const TTS_MODELS=["gemini-2.5-flash-preview-tts","gemini-2.5-flash-tts"];
 let curSrc=null,sayId=0;
@@ -220,8 +249,8 @@ async function geminiSpeak(t,id){
       const buf=actx.createBuffer(1,n,rate),ch=buf.getChannelData(0);
       for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v&0x8000)v-=0x10000;ch[i]=v/32768;}
       stopAudio();
-      const src=actx.createBufferSource();src.buffer=buf;src.connect(actx.destination);src.start();curSrc=src;
-      return true;
+      const src=actx.createBufferSource();src.buffer=buf;src.connect(actx.destination);
+      return await new Promise(res=>{src.onended=()=>res(true);curSrc=src;src.start();});
     }catch(e){clearTimeout(to);}
   }
   return false;
@@ -234,7 +263,7 @@ async function say(t){
   if(!t)return;
   let ok=false;
   if(nat){try{ok=await geminiSpeak(t,id);}catch(e){}}
-  if(!ok&&id===sayId)browserSay(t);
+  if(!ok&&id===sayId)await browserSay(t);
 }
 
 /* ---------- reminders ---------- */
@@ -312,7 +341,7 @@ async function groqChat(c,sys,web){
 async function ask(text){
   if(busy)return;
   if(!key&&!gq){add("model","Pehle ⚙️ me Gemini API key daalo.");$("set").style.display="flex";return;}
-  busy=true;
+  busy=true;lastSayP=Promise.resolve();
   add("user",text);
   hist.push({role:"user",parts:[{text}]});
   const wait=add("model","…");
@@ -378,27 +407,118 @@ async function ask(text){
     wait.textContent=out;
     hist.push({role:"model",parts:[{text:out}]});
     store.set("hist",hist.slice(-40));
-    say(out.replace(/[📝⏰⚠️🌐⚡].*/g,""));
+    lastSayP=say(out.replace(/[📝⏰⚠️🌐⚡].*/g,""));
   }catch(e){
     wait.textContent="Dikkat aayi: "+e.message;
     hist.pop();
   }finally{busy=false;}
 }
 
-function go(){const t=$("inp").value.trim();if(!t||busy)return;$("inp").value="";ask(t);}
+/* ---------- seedhe kaam (bina AI, bina limit) ---------- */
+function durMs(n){
+  const m=n.match(/(\d+(?:\.\d+)?)\s*(second|sec|seconds|सेकंड|सेकेंड|minute|minutes|min|mins|मिनट|ghante|ghanta|hour|hours|घंटे|घंटा)/i);
+  if(!m)return null;
+  const v=parseFloat(m[1]),u=m[2].toLowerCase();
+  if(/^(sec|second|सेक)/.test(u))return {ms:v*1000,txt:v+" second"};
+  if(/^(min|मिनट)/.test(u))return {ms:v*60000,txt:v+" minute"};
+  return {ms:v*3600000,txt:v+" ghanta"};
+}
+function localCmd(text){
+  const n=text.toLowerCase().trim();
+  const p2=x=>String(x).padStart(2,"0");
+  // timer
+  if(/timer|टाइमर|टाईमर/.test(n)){
+    const d=durMs(n);
+    if(d&&d.ms>=1000){
+      addRem(Date.now()+d.ms,"⏲️ Timer khatam ("+d.txt+")");
+      setTimeout(checkRems,d.ms+400);
+      return {reply:"⏲️ "+d.txt+" ka timer laga diya."};
+    }
+    return {reply:"Timer kitne ka lagaun? Aise bolo: \"5 minute ka timer\"."};
+  }
+  // percent: 245 ka 18%
+  let m=n.match(/(\d+(?:\.\d+)?)\s*(?:ka|ke|का|के|of)\s*(\d+(?:\.\d+)?)\s*(?:%|percent|प्रतिशत|pratishat|परसेंट)/);
+  if(m){const r=Math.round(parseFloat(m[1])*parseFloat(m[2])/100*1e6)/1e6;return {reply:"🧮 "+m[1]+" ka "+m[2]+"% = "+r};}
+  // calculator expression
+  const kw=/calc|calculator|कैलकुलेटर|कैल्कुलेटर|hisab|हिसाब/.test(n);
+  const em=n.replace(/calculator|calc|कैलकुलेटर|कैल्कुलेटर|hisab|हिसाब/g,"").match(/[\d(][\d\s+\-*\/x×÷().]*[\d)]/);
+  if(em&&/[+\-*\/x×÷]/.test(em[0])&&(kw||em[0].length>=n.length*0.8)){
+    const ex=em[0].replace(/[x×]/g,"*").replace(/÷/g,"/");
+    if(/^[\d\s+\-*\/().]+$/.test(ex)){
+      try{
+        const r=Function('"use strict";return ('+ex+')')();
+        if(isFinite(r))return {reply:"🧮 "+em[0].trim()+" = "+Math.round(r*1e6)/1e6};
+      }catch(e){}
+    }
+    return {reply:"Ye hisab samajh nahi aaya. Aise likho: 245 + 30 * 2"};
+  }
+  // time / date
+  if(/kitne baje|abhi time|time kya|samay kya|कितने बजे|समय क्या|what time/.test(n)){
+    const d=new Date();
+    return {reply:"🕐 Abhi "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit",hour12:true})+" baje hain."};
+  }
+  if(/tareekh|तारीख|तारिख|aaj.*(date|din)|आज.*दिन/.test(n)&&n.length<40){
+    const d=new Date(),dn=["Ravivar","Somvar","Mangalvar","Budhvar","Guruvar","Shukravar","Shanivar"][d.getDay()];
+    return {reply:"📅 Aaj "+dn+" hai, "+d.toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})+"."};
+  }
+  // brief
+  if(/brief|ब्रीफ/.test(n)&&n.length<40)return {done:true,run:runBrief};
+  // tabs
+  if(/(notes?|नोट).*(kholo|dikhao|dikha|खोलो|दिखाओ)/.test(n)){tab("notes");return {reply:"📝 Notes khol diye."};}
+  if(/(reminders?|रिमाइंडर).*(kholo|dikhao|dikha|खोलो|दिखाओ)/.test(n)){tab("rem");return {reply:"⏰ Reminders khol diye."};}
+  return null;
+}
+function submit(text){
+  const r=localCmd(text);
+  if(r===null)return ask(text);
+  if(r.done){tab("chat");r.run();return Promise.resolve();}
+  add("user",text);
+  hist.push({role:"user",parts:[{text}]});
+  add("model",r.reply);
+  hist.push({role:"model",parts:[{text:r.reply}]});
+  store.set("hist",hist.slice(-40));
+  lastSayP=say(r.reply);
+  return Promise.resolve();
+}
+
+function go(){const t=$("inp").value.trim();if(!t||busy)return;$("inp").value="";submit(t);}
 $("send").onclick=go;
 $("inp").addEventListener("keydown",e=>{if(e.key==="Enter")go()});
 
+/* ---------- mic aur hands-free ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-$("mic").onclick=()=>{
-  if(!SR){add("model","Is browser me voice input nahi hai. Chrome use karo.");return;}
-  const r=new SR();r.lang="hi-IN";r.interimResults=false;
+function updHf(){$("hf").textContent=hf?"🎧 On":"🎧 Off";$("hf").style.borderColor=hf?"var(--acc)":"";}
+function listen(chain){
+  if(!SR){add("model","Is browser me voice input nahi hai. Chrome use karo.");hf=false;updHf();return;}
+  if(rec)return;
+  const r=new SR();rec=r;r.lang="hi-IN";r.interimResults=false;r.maxAlternatives=1;
+  let got=false;
   $("mic").textContent="🔴";
-  r.onresult=e=>ask(e.results[0][0].transcript);
-  r.onerror=()=>{};
-  r.onend=()=>{$("mic").textContent="🎤"};
-  try{r.start()}catch(e){}
+  r.onresult=e=>{
+    got=true;
+    const t=(e.results[0][0].transcript||"").trim();
+    if(!t)return;
+    submit(t).then(()=>lastSayP).then(()=>{if(chain&&hf)setTimeout(()=>listen(true),300);});
+  };
+  r.onerror=e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+      hf=false;updHf();add("model","Mic ki permission nahi mili. Chrome me Site settings → Microphone → Allow karo.");
+    }
+  };
+  r.onend=()=>{
+    rec=null;$("mic").textContent="🎤";
+    if(chain&&hf&&!got)setTimeout(()=>{if(hf&&!rec&&!busy)listen(true);},500);
+  };
+  try{r.start()}catch(e){rec=null;$("mic").textContent="🎤";}
+}
+$("mic").onclick=()=>{if(rec){try{rec.stop()}catch(e){}return;}listen(false);};
+$("hf").onclick=()=>{
+  hf=!hf;updHf();
+  if(hf){tab("chat");if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}listen(true);}
+  else{try{rec&&rec.stop()}catch(e){}sayId++;stopAudio();if(window.speechSynthesis)speechSynthesis.cancel();}
 };
+$("nq").addEventListener("input",renderNotes);
+$("nexp").onclick=exportNotes;
 
 $("clr").onclick=()=>{
   if(!confirm("Chat saaf kar doon? (Notes aur reminders safe rahenge)"))return;
@@ -414,7 +534,7 @@ $("spk").onclick=()=>{speak=!speak;store.set("speak",speak);$("spk").textContent
 function tab(n){
   const names=["chat","notes","rem"];
   $("chat").classList.toggle("hide",n!=="chat");$("bar").classList.toggle("hide",n!=="chat");
-  $("notes").classList.toggle("hide",n!=="notes");$("nbar").classList.toggle("hide",n!=="notes");
+  $("notes").classList.toggle("hide",n!=="notes");$("nbar").classList.toggle("hide",n!=="notes");$("nsrch").classList.toggle("hide",n!=="notes");
   $("rems").classList.toggle("hide",n!=="rem");$("rbar").classList.toggle("hide",n!=="rem");
   $("tChat").classList.toggle("on",n==="chat");
   $("tNotes").classList.toggle("on",n==="notes");
@@ -512,7 +632,7 @@ function runBrief(){
   add("model",t);
   hist.push({role:"model",parts:[{text:t}]});
   store.set("hist",hist.slice(-40));
-  say(t);
+  lastSayP=say(t);
 }
 $("brf").onclick=()=>{tab("chat");runBrief();};
 (function autoBrief(){
@@ -521,6 +641,7 @@ $("brf").onclick=()=>{tab("chat");runBrief();};
   store.set("briefDay",day);
   setTimeout(runBrief,1500);
 })();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}
 </script>
 </body>
 </html>
